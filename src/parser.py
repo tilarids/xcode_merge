@@ -74,7 +74,7 @@ def unescape(s):
     return re_esc.sub(sub, s)
 
 def make_string(n):
-    return n[1:-1]
+    return n
 
 def make_comment(n):
     return n[3:-3]
@@ -96,7 +96,7 @@ def make_array(n):
 number = sometok('number') >> make_number
 string = sometok('string') >> make_string
 comment = sometok('comment') >> make_comment
-name = sometok('name') + maybe(comment) >> make_name
+name = (sometok('name') | sometok('string')) + maybe(comment) >> make_name
 
 value = fwd()
 member = name + op_('=') + value >> make_member
@@ -112,7 +112,6 @@ array = (
 value.define(
       object
     | number
-    | string
     | name
     | array)
 pbxproj_file = value + skip(eof)

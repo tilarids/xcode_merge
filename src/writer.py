@@ -44,13 +44,11 @@ class Writer(object):
         long_style = len(obj.members) > 3 or obj.name
         if not self.override_style is None:
             long_style = self.override_style
-        if obj.name in ["PBXFileReference"]:
+        if obj.name in ["PBXFileReference", "PBXBuildFile"]:
             self.override_style = False
             self.write_section_impl(obj, long_style)
             self.override_style = None
-        elif obj.name in ["PBXFrameworksBuildPhase", "PBXGroup", 
-                          "PBXProject", "PBXResourcesBuildPhase",
-                          "PBXVariantGroup", "XCBuildConfiguration"]:
+        elif obj.name:
             self.override_style = True
             self.write_section_impl(obj, long_style)
             self.override_style = None
@@ -94,11 +92,6 @@ class Writer(object):
             self.write_indent()
         self.out.write('}')
 
-    def write_string(self, obj):
-        self.out.write('"')
-        self.out.write(obj)
-        self.out.write('"')
-
     def write_dispatch(self, obj):
         if isinstance(obj, PLName):
             self.write_name(obj)
@@ -108,15 +101,12 @@ class Writer(object):
             self.write_array(obj)
         elif isinstance(obj, list):
             self.write_object(obj)
-        elif isinstance(obj, unicode):
-            self.write_string(obj)
         else:
             self.out.write(str(obj))
 
     def write(self, obj):
         self.out.write("// !$*UTF8*$!\n")
         self.write_dispatch(obj)
-        self.out.write('\n')
 
 def puts(tree):
     out = StringIO.StringIO()
@@ -130,15 +120,15 @@ def puts(tree):
 if __name__ == '__main__':
     from parser import *
     try:
-        # stdin = os.fdopen(sys.stdin.fileno(), 'rb')
-        stdin = open('/tmp/project.pbxproj', 'rb')
-        out = open('/tmp/project2.pbxproj', 'w')
+        stdin = os.fdopen(sys.stdin.fileno(), 'rb')
+        # stdin = open('/tmp/project.pbxproj', 'rb')
+        # out = open('/tmp/project2.pbxproj', 'w')
         input = stdin.read().decode(ENCODING)
         tree = loads(input)
-        w = Writer(out)
-        w.write(tree)
-        out.close()
-        # print puts(tree)
+        # w = Writer(out)
+        # w.write(tree)
+        # out.close()
+        print puts(tree)
     except SyntaxError, e:
         msg = (u'syntax error: %s' % e).encode(ENCODING)
         print >> sys.stderr, msg
