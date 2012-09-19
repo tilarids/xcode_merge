@@ -74,7 +74,7 @@ def unescape(s):
     return re_esc.sub(sub, s)
 
 def make_string(n):
-    return unescape(n[1:-1])
+    return n[1:-1]
 
 def make_comment(n):
     return n[3:-3]

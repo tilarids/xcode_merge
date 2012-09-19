@@ -6,6 +6,7 @@ class Writer(object):
     def __init__(self, out):
         self.out = out
         self.indent = 0
+        self.override_style = None
 
     def write_indent(self):
         self.out.write('\t' * self.indent)
@@ -18,56 +19,85 @@ class Writer(object):
             self.out.write(obj.comment)
             self.out.write(' */')
 
-    def write_section(self, obj):
-        long_style = len(obj.members) > 3 or obj.name
+    def write_section_impl(self, obj, long_style):
         if obj.name:
-            self.out.write('\n/* Begin ')
+            self.out.write('\n\n/* Begin ')
             self.out.write(obj.name)
-            self.out.write(' section */\n')
+            self.out.write(' section */')
         for (name, value) in obj.members:
             assert isinstance(name, PLName)
             if long_style:
+                self.out.write('\n')
                 self.write_indent()
             self.write_name(name)
             self.out.write(' = ')
             self.write_dispatch(value)
             self.out.write(';')
-            if long_style:
-                self.out.write('\n')
-            else:
+            if not long_style:
                 self.out.write(' ')
         if obj.name:
-            self.out.write('/* End ')
+            self.out.write('\n/* End ')
             self.out.write(obj.name)
             self.out.write(' section */')
 
+    def write_section(self, obj):
+        long_style = len(obj.members) > 3 or obj.name
+        if not self.override_style is None:
+            long_style = self.override_style
+        if obj.name in ["PBXFileReference"]:
+            self.override_style = False
+            self.write_section_impl(obj, long_style)
+            self.override_style = None
+        elif obj.name in ["PBXFrameworksBuildPhase", "PBXGroup", 
+                          "PBXProject", "PBXResourcesBuildPhase",
+                          "PBXVariantGroup", "XCBuildConfiguration"]:
+            self.override_style = True
+            self.write_section_impl(obj, long_style)
+            self.override_style = None
+        else:
+            self.write_section_impl(obj, long_style)
+
+
     def write_array(self, obj):
-        long_style = len(obj.values) > 1
+        long_style = len(obj.values) > 1 or len(obj.values) == 0
+        if not self.override_style is None:
+            long_style = self.override_style
         self.out.write("(")
+        self.indent += 1
         for value in obj.values:
-            self.write_dispatch(value)
-            self.out.write(',')
             if long_style:
                 self.out.write('\n')
-            else:
+            if long_style:
+                self.write_indent()
+            self.write_dispatch(value)
+            self.out.write(',')
+            if not long_style:
                 self.out.write(' ')
+        self.indent -= 1
+        if long_style:
+            self.out.write('\n')
+            self.write_indent()
         self.out.write(')')
 
     def write_object(self, sections):
         long_style = not ( (len(sections) == 1 and len(sections[0].members) < 4))
+        if not self.override_style is None:
+            long_style = self.override_style
         self.out.write('{')
         self.indent += 1
-        if long_style:
-            self.out.write('\n')
         for section in sections:
             assert isinstance(section, PLSection)
             self.write_section(section)
-            if long_style:
-                self.out.write('\n')
         self.indent -= 1
         if long_style:
+            self.out.write('\n')
             self.write_indent()
         self.out.write('}')
+
+    def write_string(self, obj):
+        self.out.write('"')
+        self.out.write(obj)
+        self.out.write('"')
 
     def write_dispatch(self, obj):
         if isinstance(obj, PLName):
@@ -78,12 +108,15 @@ class Writer(object):
             self.write_array(obj)
         elif isinstance(obj, list):
             self.write_object(obj)
+        elif isinstance(obj, unicode):
+            self.write_string(obj)
         else:
             self.out.write(str(obj))
 
     def write(self, obj):
         self.out.write("// !$*UTF8*$!\n")
         self.write_dispatch(obj)
+        self.out.write('\n')
 
 def puts(tree):
     out = StringIO.StringIO()
@@ -93,13 +126,19 @@ def puts(tree):
     out.close()
     return ret
 
+
 if __name__ == '__main__':
     from parser import *
     try:
-        stdin = os.fdopen(sys.stdin.fileno(), 'rb')
+        # stdin = os.fdopen(sys.stdin.fileno(), 'rb')
+        stdin = open('/tmp/project.pbxproj', 'rb')
+        out = open('/tmp/project2.pbxproj', 'w')
         input = stdin.read().decode(ENCODING)
         tree = loads(input)
-        print puts(tree)
+        w = Writer(out)
+        w.write(tree)
+        out.close()
+        # print puts(tree)
     except SyntaxError, e:
         msg = (u'syntax error: %s' % e).encode(ENCODING)
         print >> sys.stderr, msg
