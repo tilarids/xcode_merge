@@ -7,6 +7,7 @@ from funcparserlib.parser import (maybe, many, eof, skip, fwd, name_parser_vars,
         SyntaxError, oneplus)
 from funcparserlib.contrib.common import const, n, op, op_, sometok
 
+from plist import PLName, PLSection, PLArray
 
 ENCODING = 'utf-8'
 regexps = {
@@ -43,13 +44,6 @@ def tokenize(str):
     return [x for x in t(str) if x.type not in useless]
 
 
-class Name(object):
-    def __init__(self, name, comment):
-        self.name = name
-        self.comment = comment
-    def __repr__(self):
-        return u'<%s, %s>' % (self.name, self.comment)
-
 
 def make_number(n):
     try:
@@ -65,9 +59,7 @@ def make_section(n):
         m = re_section.match(section_name)
         if m:
             section_name = m.groups()[0]
-    if not section_name:
-        section_name = 'UNNAMED SECTION'
-    return (section_name, n[1])
+    return PLSection(section_name, n[1])
 
 def unescape(s):
     std = {
@@ -87,12 +79,6 @@ def make_string(n):
 def make_comment(n):
     return n[3:-3]
 
-# def make_array(n):
-#     if n is None:
-#         return []
-#     else:
-#         return 
-
 def make_member(n):
     assert len(n) == 2
     return (n[0], n[1])
@@ -102,12 +88,11 @@ def make_object(n):
 
 def make_name(n):
     assert len(n) == 2
-    return Name(n[0], n[1])
+    return PLName(n[0], n[1])
 
+def make_array(n):
+    return PLArray(n)
 
-# null = n('null') >> const(None)
-# true = n('true') >> const(True)
-# false = n('false') >> const(False)
 number = sometok('number') >> make_number
 string = sometok('string') >> make_string
 comment = sometok('comment') >> make_comment
@@ -123,7 +108,7 @@ object = (
 array = (
     op_('(') +
     many(value + op_(',')) +
-    op_(')'))
+    op_(')')) >> make_array
 value.define(
       object
     | number
