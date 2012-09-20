@@ -7,7 +7,7 @@ from funcparserlib.parser import (maybe, many, eof, skip, fwd, name_parser_vars,
         SyntaxError, oneplus)
 from funcparserlib.contrib.common import const, n, op, op_, sometok
 
-from plist import PLName, PLSection, PLArray
+from plist import PLName, PLSection, PLArray, PLObject
 
 ENCODING = 'utf-8'
 regexps = {
@@ -84,7 +84,7 @@ def make_member(n):
     return (n[0], n[1])
 
 def make_object(n):
-    return n
+    return PLObject(n)
 
 def make_name(n):
     assert len(n) == 2

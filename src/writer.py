@@ -1,6 +1,6 @@
 import cStringIO as StringIO
 
-from plist import PLName, PLSection, PLArray
+from plist import PLName, PLSection, PLArray, PLObject
 
 class Writer(object):
     def __init__(self, out):
@@ -24,7 +24,7 @@ class Writer(object):
             self.out.write('\n\n/* Begin ')
             self.out.write(obj.name)
             self.out.write(' section */')
-        for (name, value) in obj.members:
+        for (name, value) in obj.children:
             assert isinstance(name, PLName)
             if long_style:
                 self.out.write('\n')
@@ -41,7 +41,7 @@ class Writer(object):
             self.out.write(' section */')
 
     def write_section(self, obj):
-        long_style = len(obj.members) > 3 or obj.name
+        long_style = len(obj.children) > 3 or obj.name
         if not self.override_style is None:
             long_style = self.override_style
         if obj.name in ["PBXFileReference", "PBXBuildFile"]:
@@ -57,12 +57,12 @@ class Writer(object):
 
 
     def write_array(self, obj):
-        long_style = len(obj.values) > 1 or len(obj.values) == 0
+        long_style = len(obj.children) > 1 or len(obj.children) == 0
         if not self.override_style is None:
             long_style = self.override_style
         self.out.write("(")
         self.indent += 1
-        for value in obj.values:
+        for value in obj.children:
             if long_style:
                 self.out.write('\n')
             if long_style:
@@ -77,13 +77,13 @@ class Writer(object):
             self.write_indent()
         self.out.write(')')
 
-    def write_object(self, sections):
-        long_style = not ( (len(sections) == 1 and len(sections[0].members) < 4))
+    def write_object(self, obj):
+        long_style = not (len(obj.children) == 1 and len(obj.children[0].children) < 4)
         if not self.override_style is None:
             long_style = self.override_style
         self.out.write('{')
         self.indent += 1
-        for section in sections:
+        for section in obj.children:
             assert isinstance(section, PLSection)
             self.write_section(section)
         self.indent -= 1
@@ -99,7 +99,7 @@ class Writer(object):
             self.write_section(obj)
         elif isinstance(obj, PLArray):
             self.write_array(obj)
-        elif isinstance(obj, list):
+        elif isinstance(obj, PLObject):
             self.write_object(obj)
         else:
             self.out.write(str(obj))
