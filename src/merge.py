@@ -3,7 +3,7 @@ import difflib
 from itertools import izip
 import hashlib
 
-from model import Project
+from model import Project, fix_refs
 from plist import PLName, PLSection, PLObject, PLArray, PLBase
 
 def ask(mess):
@@ -129,11 +129,15 @@ def merge_item(base, local, other):
     return create_item(base, output)
 
 def merge(base, local, other):
+    fix_refs(base, local, other)
     output = Project(None)
     output.pbxproj = merge_item(base.pbxproj, local.pbxproj, other.pbxproj)
     return output
 
 if __name__ == '__main__':
+    # base = Project('/tmp/project_other.pbxproj')
+    # local = Project('/tmp/project_other.pbxproj')
+    # other = Project('/tmp/project_output.pbxproj')
     base = Project('/tmp/project_base.pbxproj')
     local = Project('/tmp/project_local.pbxproj')
     other = Project('/tmp/project_other.pbxproj')

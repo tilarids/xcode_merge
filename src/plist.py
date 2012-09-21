@@ -47,6 +47,11 @@ class PLSection(PLBase):
                 return item
         return None
 
+    def get_val(self, key):
+        item = self[key]
+        if not item is None:
+            return item[1]
+
 class PLArray(PLBase):
     def __init__(self, values):
         super(PLArray, self).__init__(values)
@@ -75,3 +80,10 @@ class PLObject(PLBase):
             if item.name == key:
                 return item
         return None
+
+    @property
+    def def_section(self):
+        if 0 == len(self.children):
+            return None
+        else:
+            return self.children[0]
