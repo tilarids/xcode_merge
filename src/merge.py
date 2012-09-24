@@ -78,12 +78,17 @@ def merge_item(base, local, other):
 
     def process_delete(li, lend, ri, rend):
         for local_item in local.children[li:lend]:
-            base_item = base[get_name(local_item)]
+            local_name = get_name(local_item)
+            base_item = base[local_name]
             if base_item is None:
                 # something was added locally
                 output.append(local_item)
             else:
-                # TODO: check if it was reordered
+                if local_name in other_names: # it was reordered
+                    local_idx = local_names.index(local_name)
+                    other_idx = other_names.index(local_name)
+                    return process_equal(local_idx, local_idx + 1, other_idx, other_idx + 1)
+
                 # it existed in base but wasn't found in remote
                 if base_item == local_item:
                     # it was removed remotely and wasn't changed locally
@@ -97,12 +102,14 @@ def merge_item(base, local, other):
 
     def process_insert(li, lend, ri, rend):
         for other_item in other.children[ri:rend]:
-            base_item = base[get_name(other_item)]
+            other_name = get_name(other_item)
+            base_item = base[other_name]
             if base_item is None:
                 # something was added remotely
                 output.append(other_item)
             else:
-                # TODO: check if it was reordered
+                if other_name in local_names:
+                    return # it was reordered, do nothing, everything was done in process_delete
                 # it existed in base but wasn't found in local
                 if base_item == other_item:
                     # it was removed locally and wasn't changed remotely

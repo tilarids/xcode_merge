@@ -15,9 +15,12 @@ class Project(object):
         with open(fname, 'w') as f:
             f.write(puts(self.pbxproj))
 
+    def get_objects(self):
+        return self.pbxproj.def_section.get_val("objects")
+
     def get_ref_dict(self):
         ret = {}
-        sect = self.pbxproj.def_section.get_val("objects")["PBXFileReference"]
+        sect = self.get_objects()["PBXFileReference"]
         if sect is None:
             return ret
         for (key, value) in sect.children:
@@ -42,6 +45,24 @@ class Project(object):
 
 
 def fix_refs(base, local, other):
+    def get_product_group(proj, ref):
+        obj = proj.get_objects()["PBXProject"].def_val
+        projRefs = obj.def_section.get_val("projectReferences")
+        for projRef in projRefs.children:
+            pRef = projRef.def_section.get_val("ProjectRef")
+            assert isinstance(pRef, PLName)
+            if pRef.name == ref:
+                pGroup = projRef.def_section.get_val("ProductGroup")
+                assert isinstance(pGroup, PLName)
+                return pGroup.name
+
+    def rename(from_proj, to_proj, from_name, to_name):
+        from_proj_group = get_product_group(from_proj, to_name)
+        to_proj_group = get_product_group(to_proj, from_name)
+
+        to_proj.rename_ref(to_proj_group, from_proj_group)
+        to_proj.rename_ref(from_name, to_name)
+
     base_refs = base.get_ref_dict()
     local_refs = local.get_ref_dict()
     other_refs = other.get_ref_dict()
@@ -54,17 +75,18 @@ def fix_refs(base, local, other):
         if other_name != local_name: # ref was changed
             base_name = base_reverse.get(local_path)
             if base_name is None: # file ref was added both to local and other separately
-                other.rename_ref(other_name, local_name)
+                rename(local, other, other_name, local_name)
             else: # base was correct, revert
                 if base_name != local_name:
-                    local.rename_ref(local_name, base_name)
+                    rename(base, local, local_name, base_name)
                 if base_name != other_name:
-                    other.rename_ref(other_name, base_name)
+                    rename(base, other, other_name, base_name)
+
 
 if __name__ == '__main__':
     base = Project('/tmp/project_base.pbxproj')
     local = Project('/tmp/project_local.pbxproj')
     other = Project('/tmp/project_other.pbxproj')
-    fix_refs(base, local, other)
+    fix_file_refs(base, local, other)
     local.write_plist('/tmp/project_local2.pbxproj')    
     other.write_plist('/tmp/project_other2.pbxproj')    

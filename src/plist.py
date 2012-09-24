@@ -52,6 +52,13 @@ class PLSection(PLBase):
         if not item is None:
             return item[1]
 
+    @property
+    def def_val(self):
+        if 0 == len(self.children):
+            return None
+        else:
+            return self.children[0][1]
+
 class PLArray(PLBase):
     def __init__(self, values):
         super(PLArray, self).__init__(values)
