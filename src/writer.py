@@ -19,22 +19,25 @@ class Writer(object):
             self.out.write(obj.comment)
             self.out.write(' */')
 
+    def write_tuple_impl(self, name, value, long_style):
+        assert isinstance(name, PLName)
+        if long_style:
+            self.out.write('\n')
+            self.write_indent()
+        self.write_name(name)
+        self.out.write(' = ')
+        self.write_dispatch(value)
+        self.out.write(';')
+        if not long_style:
+            self.out.write(' ')
+
     def write_section_impl(self, obj, long_style):
         if obj.name:
             self.out.write('\n\n/* Begin ')
             self.out.write(obj.name)
             self.out.write(' section */')
         for (name, value) in obj.children:
-            assert isinstance(name, PLName)
-            if long_style:
-                self.out.write('\n')
-                self.write_indent()
-            self.write_name(name)
-            self.out.write(' = ')
-            self.write_dispatch(value)
-            self.out.write(';')
-            if not long_style:
-                self.out.write(' ')
+            self.write_tuple_impl(name, value, long_style)
         if obj.name:
             self.out.write('\n/* End ')
             self.out.write(obj.name)
@@ -101,6 +104,9 @@ class Writer(object):
             self.write_array(obj)
         elif isinstance(obj, PLObject):
             self.write_object(obj)
+        elif isinstance(obj, tuple):
+            assert 2 == len(obj)
+            self.write_tuple_impl(obj[0], obj[1], False)
         else:
             self.out.write(str(obj))
 
@@ -116,6 +122,13 @@ def puts(tree):
     out.close()
     return ret
 
+def puts_part(part):
+    out = StringIO.StringIO()
+    w = Writer(out)
+    w.write_dispatch(part)
+    ret = out.getvalue()
+    out.close()
+    return ret
 
 if __name__ == '__main__':
     from parser import *
