@@ -68,8 +68,8 @@ class Merger(object):
         if base == other:
             # local was changed
             return local
-        ret = self.ask("Value conflict. Local version: %s; Remote version: %s; Base: %s. Which one should be used[l/r/n]?",
-                       "Some values were changed in both local and remote versions. Local version: %sRemote version: %sBase: %sWhich one should be used[l/r/n]?",
+        ret = self.ask("Value conflict. Local version: %s; Remote version: %s; Base: %s. Which one should be used[l/r/b]?",
+                       "Some values were changed in both local and remote versions. Local version: %sRemote version: %sBase: %sWhich one should be used[l/r/b]?",
                        base,
                        local,
                        other)

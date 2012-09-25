@@ -113,6 +113,7 @@ class Writer(object):
     def write(self, obj):
         self.out.write("// !$*UTF8*$!\n")
         self.write_dispatch(obj)
+        self.out.write("\n")
 
 def puts(tree):
     out = StringIO.StringIO()

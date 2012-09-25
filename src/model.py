@@ -35,6 +35,8 @@ class Project(object):
         ret = {}
         obj = self.get_objects()["PBXProject"].def_val
         projRefs = obj.def_section.get_val("projectReferences")
+        if projRefs is None:
+            return ret
         for projRef in projRefs.children:
             pRef = projRef.def_section.get_val("ProjectRef")
             assert isinstance(pRef, PLName)
