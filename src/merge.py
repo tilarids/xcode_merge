@@ -62,8 +62,12 @@ class Merger(object):
     def merge_leaf(self, base, local, other):
         if local == other:
             return local
-        if base == local or base == other:
-            return base
+        if base == local:
+            # other was changed
+            return other
+        if base == other:
+            # local was changed
+            return local
         ret = self.ask("Value conflict. Local version: %s; Remote version: %s; Base: %s. Which one should be used[l/r/n]?",
                        "Some values were changed in both local and remote versions. Local version: %sRemote version: %sBase: %sWhich one should be used[l/r/n]?",
                        base,
