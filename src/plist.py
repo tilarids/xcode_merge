@@ -69,6 +69,8 @@ class PLArray(PLBase):
     def __getitem__(self, key):
         # TODO: improve performance
         for item in self.children:
+            if isinstance(item, PLName) and item.name == key:
+                return item
             if item == key:
                 return item
         return None
