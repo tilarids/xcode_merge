@@ -31,6 +31,54 @@ class Project(object):
             ret.add(ref.name)
         return ret
 
+    def get_path(self, ref):
+        assert isinstance(ref, str)
+        def check_pbxfileref():
+            sect = self.get_objects()["PBXFileReference"]
+            if sect is None:
+                return None
+            value = sect.get_val(ref)
+            if value is None:
+                return None
+            assert isinstance(value, PLObject)
+            path = value.def_section.get_val("path")
+            assert isinstance(path, PLName)
+            return path.name
+
+        def check_proxy_generic(section, key, suffix_name=None):
+            sect = self.get_objects()[section]
+            if sect is None:
+                return None
+            value = sect.get_val(ref)
+            if value is None:
+                return None
+            assert isinstance(value, PLObject)
+            proxyref = value.def_section.get_val(key)
+            assert isinstance(proxyref, PLName)
+            path = self.get_path(proxyref.name)
+            if path is None:
+                return path
+            if not suffix_name is None:
+                suffix = value.def_section.get_val(suffix_name)
+                assert isinstance(suffix, PLName)
+                path += "#" + suffix.name
+            return path
+
+        def check_project():
+            sect = self.get_objects()["PBXProject"]
+            if sect is None:
+                return None
+            value = sect.get_val(ref)
+            if value is None:
+                return None
+            return "%ROOT%"
+
+        return  (check_pbxfileref() 
+                    or check_proxy_generic("PBXContainerItemProxy", "containerPortal", "remoteInfo")
+                    or check_proxy_generic("PBXReferenceProxy", "remoteRef")
+                    or check_project())
+
+
     def get_proj_ref_to_product_dict(self):
         ret = {}
         obj = self.get_objects()["PBXProject"].def_val
@@ -45,19 +93,28 @@ class Project(object):
             ret[pRef.name] = pGroup.name
         return ret
 
-    def get_ref_dict(self):
+    def _get_ref_dict_generic(self, section_name):
         ret = {}
-        sect = self.get_objects()["PBXFileReference"]
+        sect = self.get_objects()[section_name]
         if sect is None:
             return ret
         for (key, value) in sect.children:
             assert isinstance(key, PLName)
-            assert isinstance(value, PLObject)
-            path = value.def_section.get_val("path")
-            assert isinstance(path, PLName)
-            ret[key.name] = path.name
+            ref = key.name
+            path = self.get_path(ref)
+            assert not path is None
+            res = section_name + "#" + path # additional prefix to avoid duplication
+            ret[ref] = res
         return ret
 
+    def get_ref_dict(self):
+        return self._get_ref_dict_generic("PBXFileReference")
+
+    def get_proxy_refs_dict(self):
+        return self._get_ref_dict_generic("PBXReferenceProxy")
+
+    def get_container_refs_dict(self):
+        return self._get_ref_dict_generic("PBXContainerItemProxy")
 
     def rename_ref(self, from_name, to_name):
         def rename(obj):
@@ -77,6 +134,8 @@ def _get_product_group(proj, ref):
     return proj_refs.get(ref)
 
 def _rename(from_proj, to_proj, from_name, to_name):
+    assert isinstance(from_name, str)
+    assert isinstance(to_name, str)
     from_proj_group = _get_product_group(from_proj, to_name)
     to_proj_group = _get_product_group(to_proj, from_name)
     if not from_proj_group is None and not to_proj_group is None:
@@ -110,9 +169,15 @@ def fix_refs(base, local, other):
 
     _fix_project_refs(base, local, other)
 
-    base_refs = get_ref_dict(base)
-    local_refs = get_ref_dict(local)
-    other_refs = get_ref_dict(other)
+    base_refs = {}
+    local_refs = {}
+    other_refs = {}
+
+    for refs, proj in [(base_refs, base), (local_refs, local), (other_refs, other)]:
+        refs.update(get_ref_dict(proj))
+        refs.update(proj.get_proxy_refs_dict())
+        refs.update(proj.get_container_refs_dict())
+
     other_reverse = dict(reversed(item) for item in other_refs.iteritems())
     base_reverse = dict(reversed(item) for item in base_refs.iteritems())
     skip_paths = set()
