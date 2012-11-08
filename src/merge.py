@@ -1,3 +1,4 @@
+#! /bin/env python
 import copy
 import difflib
 from itertools import izip
@@ -7,11 +8,13 @@ from model import Project, fix_refs
 from plist import PLName, PLSection, PLObject, PLArray, PLBase
 from writer import puts_part
 
+
 def create_item(base, children):
     if isinstance(base, PLSection):
         return PLSection(base.name, children)
     else:
         return base.__class__(children)
+
 
 def get_name(item):
     if isinstance(item, PLObject): # need to generate a name to merge arrays
@@ -21,6 +24,7 @@ def get_name(item):
     else:
         name = item.name
     return name
+
 
 class Merger(object):
     def __init__(self):
@@ -80,7 +84,6 @@ class Merger(object):
         else:
             return base
 
-
     def merge_item(self, *args):
         for i, arg in enumerate(args):
             self.stacks[i].append(arg)
@@ -94,8 +97,19 @@ class Merger(object):
             assert isinstance(local, tuple)
             assert isinstance(other, tuple)
             return (base[0], self.merge_item(base[1], local[1], other[1]))
-        if not isinstance(base, PLBase) or base.children is None: # leaf
+        if not isinstance(base, PLBase) or base.children is None:  # leaf
             return self.merge_leaf(base, local, other)
+
+        if type(local) != type(other) or type(local) != type(base):
+            # it seems it's a merge between an array and the names
+            def upcast(x):
+                if isinstance(x, PLArray):
+                    return x
+                elif isinstance(x, PLName):
+                    return PLArray([x])
+                else:
+                    assert False  # shouldn't get here
+            base, local, other = map(upcast, [base, local, other])
 
         assert type(local) == type(other)
         assert type(local) == type(base)
@@ -207,5 +221,6 @@ if __name__ == '__main__':
     local = Project(sys.argv[2])
     other = Project(sys.argv[3])
     output = merge(base, local, other)
-    output.write_plist('/tmp/output.pbxproj')
+    # output.write_plist('/tmp/output.pbxproj')
+    output.write_plist(sys.argv[4])
     # output.write_plist('/tmp/qp_output.pbxproj')

@@ -24,17 +24,20 @@ regexps = {
 re_esc = re.compile(regexps['escaped'], VERBOSE)
 re_section = re.compile("\s*Begin (\w+) section\s*")
 
+
 def tokenize(str):
     'str -> Sequence(Token)'
     specs = [
         Spec('space', r'[ \t\r\n]+'),
         Spec('string', ur'"(%(unescaped)s | %(escaped)s)*"' % regexps, VERBOSE),
-        Spec('number', r'''
-            -?                  # Minus
-            (0|([1-9][0-9]*))   # Int
-            (\.[0-9]+)?         # Frac
-            ([Ee][+-][0-9]+)?   # Exp
-            \b''', VERBOSE),
+        # NOTE: sometimes number gets into names place thus we shouldn't use them
+        # TODO: consider removing or updating it
+        # Spec('number', r'''
+        #     -?                  # Minus
+        #     (0|([1-9][0-9]*))   # Int
+        #     (\.[0-9]+)?         # Frac
+        #     ([Ee][+-][0-9]+)?   # Exp
+        #     \b''', VERBOSE),
         Spec('op', r'[{}\(\),;=]'),
         Spec('comment', r'/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/'),
         Spec('name', r'[/.A-Za-z_0-9]+'),
@@ -42,7 +45,6 @@ def tokenize(str):
     useless = ['space']
     t = make_tokenizer(specs)
     return [x for x in t(str) if x.type not in useless]
-
 
 
 def make_number(n):
