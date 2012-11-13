@@ -41,7 +41,7 @@ class Merger(object):
 
     def ask(self, mess, verb_mess, *objs):
         ret_options = mess[mess.find('[')+1:mess.find(']')].split('/')
-        print mess % tuple("'%s'" % puts_part(x) for x in objs if not x is None), 
+        print mess % tuple("'%s'" % puts_part(x) for x in objs if not x is None),
         print "(you can press 'v' for more verbose mode) ",
         verbosity = 3
         while True:
@@ -56,10 +56,10 @@ class Merger(object):
                         s = "\nPath = '%s'\n" % self.get_path(i)
                         s += sep + puts_part(self.stacks[i][-real_v]) + sep
                         strs.append(s)
-                print (verb_mess or mess) % tuple(strs), 
+                print (verb_mess or mess) % tuple(strs),
                 print " (you can press 'v' for more verbose mode) ",
             elif not inp in ret_options:
-                print "Please select one of the options: [%s]" % '/'.join(ret_options) 
+                print "Please select one of the options: [%s]" % '/'.join(ret_options)
             else:
                 return inp
 
@@ -93,6 +93,9 @@ class Merger(object):
         return ret
 
     def _merge_item(self, base, local, other):
+        # if isinstance(base, tuple) and base[0].name=="C02AC7AE12C3C6330005B517":
+        #     import pdb; pdb.set_trace()
+
         if isinstance(base, tuple):
             assert isinstance(local, tuple)
             assert isinstance(other, tuple)
@@ -141,7 +144,8 @@ class Merger(object):
                     if local_name in other_names: # it was reordered
                         local_idx = local_names.index(local_name)
                         other_idx = other_names.index(local_name)
-                        return process_equal(local_idx, local_idx + 1, other_idx, other_idx + 1)
+                        process_equal(local_idx, local_idx + 1, other_idx, other_idx + 1)
+                        continue
 
                     # it existed in base but wasn't found in remote
                     if base_item == local_item:
@@ -166,7 +170,7 @@ class Merger(object):
                     output.append(other_item)
                 else:
                     if other_name in local_names:
-                        return # it was reordered, do nothing, everything was done in process_delete
+                        continue # it was reordered, do nothing, everything was done in process_delete
                     # it existed in base but wasn't found in local
                     if base_item == other_item:
                         # it was removed locally and wasn't changed remotely
