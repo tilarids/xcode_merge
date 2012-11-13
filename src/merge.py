@@ -93,9 +93,6 @@ class Merger(object):
         return ret
 
     def _merge_item(self, base, local, other):
-        # if isinstance(base, tuple) and base[0].name=="C02AC7AE12C3C6330005B517":
-        #     import pdb; pdb.set_trace()
-
         if isinstance(base, tuple):
             assert isinstance(local, tuple)
             assert isinstance(other, tuple)
