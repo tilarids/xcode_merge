@@ -1,5 +1,4 @@
-#! /bin/env python
-import copy
+#! /usr/bin/env python
 import difflib
 from itertools import izip
 import hashlib
@@ -15,7 +14,6 @@ def create_item(base, children):
     else:
         return base.__class__(children)
 
-
 def get_name(item):
     if isinstance(item, PLObject): # need to generate a name to merge arrays
         return hashlib.sha224(repr(item)).hexdigest()
@@ -25,16 +23,15 @@ def get_name(item):
         name = item.name
     return name
 
-
 class Merger(object):
     def __init__(self):
-        self.stacks = [[] for x in xrange(3)]
+        self.stacks = [[] for _ in xrange(3)]
 
     def get_path(self, i):
         path = []
-        for x in self.stacks[i]:
-            if not isinstance(x, PLObject):
-                name = get_name(x)
+        for node in self.stacks[i]:
+            if not isinstance(node, PLObject):
+                name = get_name(node)
                 if not name is None:
                     path.append(name)
         return '::'.join(path)
@@ -109,7 +106,7 @@ class Merger(object):
                     return PLArray([x])
                 else:
                     assert False  # shouldn't get here
-            base, local, other = map(upcast, [base, local, other])
+            base, local, other = [upcast(x) for x in (base, local, other)]
 
         assert type(local) == type(other)
         assert type(local) == type(base)
@@ -208,20 +205,20 @@ def merge(base, local, other):
     return merger.merge(base, local, other)
 
 if __name__ == '__main__':
-    # base = Project('/tmp/project_other.pbxproj')
-    # local = Project('/tmp/project_other.pbxproj')
-    # other = Project('/tmp/project_output.pbxproj')
-    # base = Project('/tmp/project_base.pbxproj')
-    # local = Project('/tmp/project_local.pbxproj')
-    # other = Project('/tmp/project_other.pbxproj')
-    # base = Project('/tmp/qp_base.pbxproj')
-    # local = Project('/tmp/qp_feb.pbxproj')
-    # other = Project('/tmp/qp_apr.pbxproj')
-    import sys
-    base = Project(sys.argv[1])
-    local = Project(sys.argv[2])
-    other = Project(sys.argv[3])
+    import argparse
+    parser = argparse.ArgumentParser(description='Merge XCode projects')
+    parser.add_argument('base', type=str,
+                   help='file name of the base file')
+    parser.add_argument('local', type=str,
+                   help='file name of the local file')
+    parser.add_argument('other', type=str,
+                   help='file name of the other file')
+    parser.add_argument('output', type=str,
+                   help='file name of the output file')
+
+    args = parser.parse_args()
+    base = Project(args.base)
+    local = Project(args.local)
+    other = Project(args.other)
     output = merge(base, local, other)
-    # output.write_plist('/tmp/output.pbxproj')
-    output.write_plist(sys.argv[4])
-    # output.write_plist('/tmp/qp_output.pbxproj')
+    output.write_plist(args.output)
