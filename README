@@ -1,0 +1,7 @@
+XCode merge tool: src/merge.py. Check the help message there
+
+To integrate with mercurial simply add to merge-tools section in your .hgrc file:
+
+[merge-tools]
+xcode_merge.args = $base $local $other $output
+xcode_merge.executable=/path/to/pbx-utils/src/merge.py
